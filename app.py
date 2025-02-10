@@ -9,7 +9,7 @@ import numpy as np
 
 # Set up Streamlit app
 st.set_page_config(page_title="Stock Market Data analysis", layout="wide")
-st.title("📈 Sector Rotation Analysis Dashboard")
+st.title("📈 Stock Market Data analysis")
 st.markdown("### A user-friendly dashboard to analyze sector performance, risk, and stock trends in India")
 
 
