@@ -12,6 +12,7 @@ st.set_page_config(page_title="Stock Market Data analysis", layout="wide")
 st.title("📈 Sector Rotation Analysis Dashboard")
 st.markdown("### A user-friendly dashboard to analyze sector performance, risk, and stock trends in India")
 
+
 # Fetch live stock data from Yahoo Finance
 @st.cache_data
 def fetch_stock_list():
@@ -23,6 +24,7 @@ def fetch_stock_list():
         st.error(f"Error fetching stock data: {e}")
         return pd.DataFrame()
 
+
 stock_list = fetch_stock_list()
 if stock_list.empty:
     st.error("⚠️ No stock data available.")
@@ -31,6 +33,7 @@ if stock_list.empty:
 # Sidebar for user selection
 time_range = st.sidebar.selectbox("Select Time Range", ["1y", "5y", "10y", "max"])
 selected_stock = st.sidebar.selectbox("Choose a Stock", stock_list["Ticker"].unique())
+
 
 # Fetch historical data for selected stock
 @st.cache_data
@@ -43,6 +46,7 @@ def get_stock_data(ticker, period):
     except Exception as e:
         st.error(f"Error fetching stock data: {e}")
         return pd.DataFrame()
+
 
 stock_data = get_stock_data(selected_stock, time_range)
 if stock_data.empty:
@@ -59,20 +63,22 @@ if not stock_data.empty:
     stock_data['SMA_50'] = stock_data['Close'].rolling(window=50).mean()
     stock_data['SMA_200'] = stock_data['Close'].rolling(window=200).mean()
     stock_data['Volatility'] = stock_data['Close'].pct_change().rolling(20).std()
-    
+
     # Exponential Moving Averages (EMA)
+    stock_data['EMA_12'] = stock_data['Close'].ewm(span=12, adjust=False).mean()
+    stock_data['EMA_26'] = stock_data['Close'].ewm(span=26, adjust=False).mean()
     stock_data['EMA_20'] = stock_data['Close'].ewm(span=20, adjust=False).mean()
     stock_data['EMA_50'] = stock_data['Close'].ewm(span=50, adjust=False).mean()
-    
+
     # Bollinger Bands
     stock_data['Middle Band'] = stock_data['Close'].rolling(window=20).mean()
     stock_data['Upper Band'] = stock_data['Middle Band'] + (stock_data['Close'].rolling(window=20).std() * 2)
     stock_data['Lower Band'] = stock_data['Middle Band'] - (stock_data['Close'].rolling(window=20).std() * 2)
-    
+
     # Moving Average Convergence Divergence (MACD)
-    stock_data['MACD'] = stock_data['EMA_12'] = stock_data['Close'].ewm(span=12, adjust=False).mean() - stock_data['EMA_26']
+    stock_data['MACD'] = stock_data['EMA_12'] - stock_data['EMA_26']
     stock_data['Signal Line'] = stock_data['MACD'].ewm(span=9, adjust=False).mean()
-    
+
     # Relative Strength Index (RSI)
     avg_gain = stock_data['Close'].diff().where(stock_data['Close'].diff() > 0, 0).rolling(14).mean().fillna(0)
     avg_loss = -stock_data['Close'].diff().where(stock_data['Close'].diff() < 0, 0).rolling(14).mean().fillna(0)
@@ -82,6 +88,8 @@ if not stock_data.empty:
 
 # AI-Based Stock Recommendations
 st.subheader("📊 AI-Based Stock Recommendation")
+
+
 def stock_recommendation(stock_data):
     try:
         if stock_data.empty:
@@ -90,7 +98,7 @@ def stock_recommendation(stock_data):
         latest_macd = stock_data['MACD'].iloc[-1]
         latest_signal = stock_data['Signal Line'].iloc[-1]
         latest_volatility = stock_data['Volatility'].iloc[-1]
-        
+
         if latest_rsi > 70 and latest_macd < latest_signal:
             return "📉 Strong Sell - Overbought & Bearish MACD"
         elif latest_rsi < 30 and latest_macd > latest_signal:
@@ -102,6 +110,9 @@ def stock_recommendation(stock_data):
     except Exception as e:
         return f"Error in recommendation: {e}"
 
+
 if not stock_data.empty:
     recommendation = stock_recommendation(stock_data)
-    st.markdown(f"<div style='padding:10px; border-radius:5px; background-color:#2e86c1; color:white; font-size:18px; font-weight:bold;'>{recommendation}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='padding:10px; border-radius:5px; background-color:#2e86c1; color:white; font-size:18px; font-weight:bold;'>{recommendation}</div>",
+        unsafe_allow_html=True)
