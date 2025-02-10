@@ -98,15 +98,27 @@ def stock_recommendation(stock_data):
         latest_macd = stock_data['MACD'].iloc[-1]
         latest_signal = stock_data['Signal Line'].iloc[-1]
         latest_volatility = stock_data['Volatility'].iloc[-1]
+        latest_sma_50 = stock_data['SMA_50'].iloc[-1]
+        latest_sma_200 = stock_data['SMA_200'].iloc[-1]
 
-        if latest_rsi > 70 and latest_macd < latest_signal:
-            return "📉 Strong Sell - Overbought & Bearish MACD"
-        elif latest_rsi < 30 and latest_macd > latest_signal:
-            return "📈 Strong Buy - Oversold & Bullish MACD"
-        elif latest_volatility > 0.02:
+        previous_sma_50 = stock_data['SMA_50'].iloc[-2]
+        previous_sma_200 = stock_data['SMA_200'].iloc[-2]
+        golden_cross = previous_sma_50 < previous_sma_200 and latest_sma_50 > latest_sma_200
+        death_cross = previous_sma_50 > previous_sma_200 and latest_sma_50 < latest_sma_200
+        macd_histogram = latest_macd - latest_signal
+
+        if latest_rsi > 70 and latest_macd < latest_signal and death_cross:
+            return "📉 Strong Sell - Overbought, Bearish MACD & Death Cross"
+        elif latest_rsi < 30 and latest_macd > latest_signal and golden_cross:
+            return "📈 Strong Buy - Oversold, Bullish MACD & Golden Cross"
+        elif macd_histogram > 0 and latest_sma_50 > latest_sma_200:
+            return "📈 Buy - Bullish MACD & Uptrend"
+        elif macd_histogram < 0 and latest_sma_50 < latest_sma_200:
+            return "📉 Sell - Bearish MACD & Downtrend"
+        elif latest_volatility > stock_data['Volatility'].quantile(0.75):
             return "⚠️ Hold - High Volatility Detected"
         else:
-            return "🔄 Hold - No Strong Signal"
+            return "🔄 Hold - Weak or No Strong Signal"
     except Exception as e:
         return f"Error in recommendation: {e}"
 
